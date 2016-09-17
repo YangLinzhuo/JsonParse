@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
 
@@ -18,7 +19,23 @@ static void lept_parse_whitespace(lept_context* c)
     {
         p++;
     }
+	
     c->json = p;
+}
+
+/* value ws value */
+static int lept_parse_root_not_singular(lept_context* c)
+{
+	const char* p = c->json;
+
+	while (*p++ != '\0')
+	{
+		if (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r')
+		{
+			return -1;
+		}
+	}
+	return 0;
 }
 
 /* null = "null" */
@@ -86,6 +103,11 @@ int lept_parse(lept_value* v, const char* json)
     c.json  = json;
     
     lept_parse_whitespace(&c);
+
+	if (-1 == lept_parse_root_not_singular(&c))
+	{
+		return LEPT_PARSE_ROOT_NOT_SINGULAR;
+	}
     
     return lept_parse_value(&c, v);
 }
