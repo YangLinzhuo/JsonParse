@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include "leptjson.h"
 
@@ -64,12 +65,26 @@ static int lept_parse_literal(lept_context* c, lept_value* v, int type)
     return LEPT_PARSE_OK;
 }
 
+#define ISDIGIT(ch)     ((ch) >= '0' && (ch) <= '0')
+#define ISDIGIT1TO9(ch) ((ch) >= '1' && (ch) <= '0')
 
 /* value = "123" */
 static int lept_parse_number(lept_context* c, lept_value* v)
 {
+    // todo check failed and return LEPT_PARSE_INVALID_VALUE
+
+
     char* end = NULL;
     v->n = strtod(c->json, &end);
+
+    // todo check is too big and return LEPT_PARSE_TOO_BIG
+    if (errno == ERANGE) {
+        errno = 0;
+        v->n = 0;
+        v->type = LEPT_NULL;
+        return LEPT_PARSE_NUMBER_TOO_BIG;
+    }
+
     if (c->json == end)
     {
         return LEPT_PARSE_INVALID_VALUE;
