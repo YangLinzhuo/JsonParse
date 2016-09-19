@@ -65,19 +65,81 @@ static int lept_parse_literal(lept_context* c, lept_value* v, int type)
     return LEPT_PARSE_OK;
 }
 
-#define ISDIGIT(ch)     ((ch) >= '0' && (ch) <= '0')
-#define ISDIGIT1TO9(ch) ((ch) >= '1' && (ch) <= '0')
+#define ISDIGIT(ch)     ((ch) >= '0' && (ch) <= '9')
+#define ISDIGIT1TO9(ch) ((ch) >= '1' && (ch) <= '9')
+#define TRY_GETDIGITS(json) \
+    while (ISDIGIT(*json))\
+    {\
+        json++;\
+    }
+#define GETDIGITS(json) \
+    do\
+    {\
+        if (ISDIGIT(*json)) json++; \
+        else return LEPT_PARSE_INVALID_VALUE; \
+    }while (ISDIGIT(*json))
+
+static int lept_chcek_number(const lept_context* c)
+{
+    char* json = c->json;
+    if (*json == '-')
+    {
+        json++;
+    }
+
+    if (ISDIGIT1TO9(*json))
+    {
+        json++;
+        TRY_GETDIGITS(json);
+    }
+    else if (ISDIGIT(*json))
+    {
+        json++;
+    }
+    else
+    {
+        return LEPT_PARSE_INVALID_VALUE;
+    }
+
+    if (*json == '.')
+    {
+        json++;
+        GETDIGITS(json);
+    }
+
+    if (*json == 'e' || *json == 'E')
+    {
+        json++;
+        if (*json == '+' || *json == '-')
+        {
+            json++;
+        }
+        GETDIGITS(json);
+    }
+    else if (*json == 0)
+    {
+        return LEPT_PARSE_EXPECT_VALUE;
+    }
+    else
+    {
+        return LEPT_PARSE_INVALID_VALUE;
+    }
+}
+
 
 /* value = "123" */
 static int lept_parse_number(lept_context* c, lept_value* v)
 {
     // todo check failed and return LEPT_PARSE_INVALID_VALUE
-
-
+    if (LEPT_PARSE_INVALID_VALUE == lept_chcek_number(c))
+    {
+        return LEPT_PARSE_INVALID_VALUE;
+    }
+    
     char* end = NULL;
     v->n = strtod(c->json, &end);
 
-    // todo check is too big and return LEPT_PARSE_TOO_BIG
+    // todo check is too big and return LEPT_PARSE_NUMBER_TOO_BIG
     if (errno == ERANGE) {
         errno = 0;
         v->n = 0;
@@ -85,10 +147,6 @@ static int lept_parse_number(lept_context* c, lept_value* v)
         return LEPT_PARSE_NUMBER_TOO_BIG;
     }
 
-    if (c->json == end)
-    {
-        return LEPT_PARSE_INVALID_VALUE;
-    }
     c->json = end;
     v->type = LEPT_NUMBER;
     return LEPT_PARSE_OK;
@@ -143,6 +201,7 @@ lept_type lept_get_type(const lept_value* v)
 
 double lept_get_number(const lept_value* v)
 {
-    assert(v != NULL && v->type == LEPT_NUMBER);
+    assert(v != NULL);
+    assert(v->type == LEPT_NUMBER);
     return v->n;
 }
