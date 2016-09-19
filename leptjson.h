@@ -17,7 +17,8 @@ typedef enum
 // node value
 typedef struct 
 {
-    lept_type type;
+    double n;       //number
+    lept_type type; //true/false/null
 } lept_value;
 
 
@@ -35,8 +36,8 @@ typedef struct
 	const char* json;
 } lept_context;
 
-int lept_parse(lept_value* v, const char* json); //parse the JSON
+int       lept_parse(lept_value* v, const char* json); //parse the JSON
 lept_type lept_get_type(const lept_value* v);    //get the json type
-
+double    lept_get_number(const lept_value* v);     //get the json value
 
 #endif
